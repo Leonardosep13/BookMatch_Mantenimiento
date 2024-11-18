@@ -1,7 +1,9 @@
 body {
-  background-color: #452d17; /* Dark brown background */
-  color: #fff; /* Change text color to white */
+  background-color: #000000; 
+  color: #ff0000; 
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  margin: 0; 
+  padding: 0; 
 }
 
 .container {
@@ -13,33 +15,30 @@ body {
   margin-bottom: 20px;
 }
 
+
 .grid-container {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* 2 columns */
-  grid-template-rows: auto auto; /* 2 rows */
+  grid-template-columns: 1fr 1fr; 
+  grid-template-rows: auto auto; 
   gap: 20px;
   margin-bottom: 20px;
 }
 
-.text-container {
-  background-color: #634e33; /* Dark brown background for text */
-  padding: 10px;
-}
-
+.text-container,
 .image-container {
-  background-color: #634e33; /* Dark brown background for image */
+  background-color: #ffffff; 
   padding: 10px;
 }
 
 .text {
-  margin: 0; /* Remove default margin for paragraphs */
+  margin: 0; 
 }
 
 .image {
-  max-width: 100%; /* Ensure image doesn't exceed container width */
-  height: auto; /* Maintain aspect ratio */
-  display: block; /* Prevent whitespace below image */
-  margin: 0 auto; /* Center image horizontally */
+  max-width: 100%; 
+  height: auto; 
+  display: block; 
+  margin: 0 auto; 
 }
 
 .button-container {
@@ -48,8 +47,8 @@ body {
 }
 
 button {
-  background-color: #8c6239; /* Dark brown button color */
-  color: #fff; /* White text color */
+  background-color: #8c6239; 
+  color: #fff;
   border: none;
   padding: 10px 20px;
   margin: 0 10px;
@@ -57,5 +56,47 @@ button {
 }
 
 button:hover {
-  background-color: #634e33; /* Darker brown on hover */
+  background-color: #634e33; 
+}
+
+@media screen and (max-width: 768px) {
+  .grid-container {
+    grid-template-columns: 1fr; 
+    grid-template-rows: auto; 
+  }
+
+  .title {
+    font-size: 20px; 
+  }
+
+  .container {
+    padding: 15px; 
+  }
+
+  .button-container {
+    flex-direction: column; 
+  }
+
+  button {
+    margin: 10px 0; 
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .title {
+    font-size: 18px; 
+  }
+
+  .container {
+    padding: 10px; 
+  }
+
+  .button-container {
+    flex-direction: column; 
+  }
+
+  button {
+    width: 100%; 
+    margin: 5px 0; 
+  }
 }

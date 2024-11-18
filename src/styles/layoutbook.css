@@ -7,17 +7,15 @@
 body {
     font-family: Arial, sans-serif;
     background-color: rgba(255, 229, 204, 0.8);
-    
 }
 
 .form-container {
     z-index: 1;
-    width: 90%; /* Adjusted width for responsiveness */
+    width: 90%;
     max-width: 500px;
     margin: 50px auto;
     background-color: rgba(255, 229, 204, 0.8);
     padding: 30px;
-   
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -85,7 +83,13 @@ input[type="number"] {
 }
 
 .footer {
-    margin-top: 10px;
+    position: fixed;
+    font-family: Arial, sans-serif;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background-color: #dbc1ac;
+    color: black;
     text-align: center;
 }
 
@@ -147,22 +151,36 @@ h1 {
     .form-container {
         width: 80%; /* Adjusted width for smaller screens */
     }
+
+    .signup-button {
+        font-size: 14px; /* Reduced font size for smaller screens */
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"] {
+        font-size: 14px; /* Reduced input text size */
+    }
+
+    .header {
+        margin-bottom: 20px; /* Adjusted margin for smaller screens */
+    }
 }
 
 /* Media Query for even smaller screens */
 @media screen and (max-width: 480px) {
     .form-container {
         width: 90%; /* Further adjusted width for even smaller screens */
+        padding: 20px; /* Reduced padding for smaller screens */
+    }
+
+    .signup-button {
+        font-size: 12px; /* Further reduced font size */
+        padding: 8px; /* Reduced padding for smaller screens */
+    }
+
+    h1 {
+        font-size: 24px; /* Reduced font size for headings */
     }
 }
-
-.footer {
-    position: fixed;
-    font-family: Arial, sans-serif;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    background-color: #dbc1ac;
-    color: black;
-    text-align: center;
-  }

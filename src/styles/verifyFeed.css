@@ -1,80 +1,143 @@
-body {
-  background-color: #ece0d1
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-.header {
+body {
+  background-color: white;
   font-family: Arial, sans-serif;
+  font-size: 16px;
+  margin: 0;
+}
+
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: black;
+  color: palevioletred;
   width: 100%;
-  background-color: #967259;
-  color: black;
-  text-align: center;
-  position: absolute;
-  height: 56px;
+  position: fixed;
   top: 0;
   left: 0;
-  display: flex; 
-  align-items: center; 
-  justify-content: space-between; 
-  
+  right: 0;
+  padding: 10px;
 }
 
 .title {
   margin: 0;
-  flex-grow: 1; 
+  font-size: 1.5rem; 
   text-align: center;
-  padding-left:150px;
+  width: 100%;
+  
 }
 
 .botonRegresar {
-  font-family: Arial, sans-serif;
-  margin-left: 20px; 
-  padding: 0 70px;
-  text-decoration: underline; 
+  width: auto;
+  padding: 10px 20px;
+  border: none;
+  outline: none;
+  color: #fff;
+  background: #111;
   cursor: pointer;
+  position: relative;
+  z-index: 0;
+  border-radius: 10px;
+  font-size: 1rem;
+  margin-bottom: 10px;
 }
+
+.botonRegresar:before {
+  content: '';
+  background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+  position: absolute;
+  top: -2px;
+  left:-2px;
+  background-size: 400%;
+  z-index: -1;
+  filter: blur(5px);
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  animation: glowing 20s linear infinite;
+  opacity: 0;
+  transition: opacity .3s ease-in-out;
+  border-radius: 10px;
+}
+
+.botonRegresar:active {
+  color: #000
+}
+
+.botonRegresar:active:after {
+  background: transparent;
+}
+
+.botonRegresar:hover:before {
+  opacity: 1;
+}
+
+.botonRegresar:after {
+  z-index: -1;
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #111;
+  left: 0;
+  top: 0;
+  border-radius: 10px;
+}
+
+@keyframes glowing {
+  0% { background-position: 0 0; }
+  50% { background-position: 400% 0; }
+  100% { background-position: 0 0; }
+}
+
 
 .profilePic {
-  width: 180px; /* Adjust width as needed */
-  height: 200px; /* Adjust height as needed */
-   border-radius: 2%;/* Make it circular */
-  border-color: black;
-  margin-right: 20px; /* Add margin for separation */
+  width: 180px; 
+  height: 200px; 
+  border-radius: 2%;
+  border-color: transparent;
+  margin-right: 20px; 
+
 }
+
 
 .listContainer {
-  margin-top: 100px;
-  
+  margin: 100px auto 0 auto;
   padding: 10px;
-  margin-left: 30%;
-  margin-right: 30%;
-  
-  background-clip: padding-box;
+  max-width: 600px;
+  width: 100%;
 }
 
+
 .usersContainer {
-  background-color: #634832;
+  background-color: pink;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 10px rgba(147, 47, 100, 0.3);
   border-radius: 2%;
-  margin-bottom: 20px; /* Add space between user containers */
-  padding: 10px; /* Add padding to maintain the dark coffee background */
+  margin-bottom: 20px;
+  padding: 10px;
 }
 
 .userDetail {
   background-color: #ece0d1;
-  font-family: Arial, sans-serif;
   padding: 10px;
   border-radius: 5px;
-  height: 190px;
   flex-grow: 1;
   overflow: auto; 
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: bold;
+  width: 100%;
+  min-width: 200px;
 }
 
-.checkIcon{
-
+.checkIcon {
   cursor: pointer;
 }
 
@@ -83,9 +146,71 @@ body {
   align-items: center;
   margin-bottom: 4px;
   padding-bottom: 2px;
-  height: 30px;
+  height: auto;
 }
 
 .validateUserContainer p {
-  margin-right: 8px; /* Adjust the spacing between the text and the icon */
+  margin-right: 8px;
+}
+
+
+.empty-list-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  margin-top: 0;
+  text-align: center;
+}
+
+.empty-list-container img {
+  width: 100%;
+  max-width: 450px;
+  height: auto;
+  opacity: 0.6;
+}
+
+.empty-list-title {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+
+@media screen and (min-width: 481px) {
+  .header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .title {
+    font-size: 1.8rem;
+    
+  }
+
+  .botonRegresar {
+    margin-bottom: 0;
+  }
+
+  .usersContainer {
+    flex-wrap: nowrap;
+  }
+
+  .userDetail, .profilePic {
+    width: auto;
+    margin-bottom: 0;
+  }
+}
+
+
+@media screen and (min-width: 769px) {
+  .title {
+    font-size: 2rem;
+    
+  }
+
+  .listContainer {
+    max-width: 600px;
+  }
 }

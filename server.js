@@ -12,11 +12,11 @@ const app = express();
 const port = 3000;
 
 const db = new pg.Client({
-  user: "postgres",
-  host: "localhost",
-  database: "BookmatchProd",
-  password: "root",
-  port: 5435,
+    user: "postgres.dfwqzdzvdncfjqvqymbc",
+    host: "aws-0-us-east-1.pooler.supabase.com",
+    database: "postgres",
+    password: "Leonardosep#134",
+    port: 5432,
 });
 
 
@@ -195,13 +195,14 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/addBook', verifyToken, upload.single('image'), async (req, res) => {
     try {
         const userId = req.user.userId;
-        const { titulo, autor, isbn, descripcion } = req.body;
+        const { titulo, autor, isbn, descripcion, review } = req.body;  // Agregado: extraer 'review' del cuerpo
         const image = req.file; // Access the uploaded file
         const imageName = image.filename; // Store the filename
         console.log(imageName);
         const tags = JSON.parse(req.body.tags);
         console.log("SelectedTags");
         console.log(tags);
+
         // Insert book data into the database, including the image filename or URL
         const insertQuery = `
             INSERT INTO libro (titulo, autor, isbn, descripcion, idusuario, coverimage, is_available)
@@ -210,9 +211,18 @@ app.post('/api/addBook', verifyToken, upload.single('image'), async (req, res) =
         console.log(result.rows);
 
         const bookId = result.rows[0].id_libro;
-
         console.log(bookId);
-        try{
+
+        // Insert review into the review table
+        if (review) {
+            const insertReviewQuery = `
+                INSERT INTO review (id_libro, opinion)
+                VALUES ($1, $2)`;
+            await db.query(insertReviewQuery, [bookId, review]);
+        }
+
+        // Insert tags into libro_tags table
+        try {
             for (const tagId of tags) {
                 const insertTagQuery = `
                     INSERT INTO libro_tags (libroid, tagid)
@@ -220,10 +230,10 @@ app.post('/api/addBook', verifyToken, upload.single('image'), async (req, res) =
                 await db.query(insertTagQuery, [bookId, tagId]);
             }
 
-        }catch(error){
-            res.status(500).json({error: "No se pudieron agregar los tags"});
+        } catch (error) {
+            return res.status(500).json({ error: "No se pudieron agregar los tags" });
         }
-        
+
         // Respond with success message
         res.status(200).json({ message: 'Book added successfully' });
     } catch (error) {
@@ -231,6 +241,7 @@ app.post('/api/addBook', verifyToken, upload.single('image'), async (req, res) =
         res.status(500).json({ error: 'Failed to add book' });
     }
 });
+
 
 app.get('/api/renderBooks', verifyToken, async (req, res) => {
     const userId = req.user.userId;
@@ -279,31 +290,61 @@ app.get('/api/renderBooks', verifyToken, async (req, res) => {
 
 
 
-app.delete('/api/deleteBook/:id', verifyToken, async (req, res)=>{
-    try{
-        const userId = req.user.userId;
-        const bookId = req.params.id;
-        console.log("user id: "+ userId);
-        console.log("book id "+ bookId);
+app.delete('/api/deleteBook/:id', verifyToken, async (req, res) => {
+    const userId = req.user.userId;
+    const bookId = req.params.id;
 
+    console.log("user id: " + userId);
+    console.log("book id " + bookId);
+
+    try {
+        await db.query('BEGIN'); // Start transaction
+
+        // Delete tags associated with the book
         const deleteTagsQuery = `DELETE FROM libro_tags WHERE libroid = $1`;
         await db.query(deleteTagsQuery, [bookId]);
 
-        try {
-            const deleteBookQuery = `DELETE FROM libro where id_libro =$1 AND idusuario = $2`;
-            await db.query(deleteBookQuery, [bookId, userId]);
-            res.status(200).json({message: "so far so good!"})
-        } catch (error) {
-            res.status(500).json({error: "No se pudo borrar el libro"})
+        // Delete book from waiting list
+        const deleteBookFromWL = `DELETE FROM waiting_list WHERE book_id=$1`;
+        await db.query(deleteBookFromWL, [bookId]);
+
+        const deleteReview = 'DELETE FROM review WHERE id_libro=$1';
+        await db.query(deleteReview, [bookId]);
+
+        // Get loan ID for the book
+        const getLoanId = `SELECT loan_id FROM loan_book WHERE book_id = $1`;
+        const loanIdResponse = await db.query(getLoanId, [bookId]);
+        if (loanIdResponse.rows.length > 0) {
+            const loan_id = loanIdResponse.rows[0].loan_id;
+
+            // Delete messages associated with the loan
+            const deleteBookChat = `DELETE FROM messages WHERE loan_id = $1`;
+            await db.query(deleteBookChat, [loan_id]);
+
+            // Delete the loan record
+            const deleteLoanBook = `DELETE FROM loan_book WHERE book_id = $1`;
+            await db.query(deleteLoanBook, [bookId]);
         }
 
-    }catch(error){
+        // Delete the book
+        const deleteBookQuery = `DELETE FROM libro WHERE id_libro = $1 AND idusuario = $2`;
+        const deleteBookResult = await db.query(deleteBookQuery, [bookId, userId]);
 
-        res.status(500).json({error: 'No se pudieron borrar los tags'})
+        // Check if the book was successfully deleted
+        if (deleteBookResult.rowCount === 0) {
+            throw new Error('El libro no fue encontrado o no pertenece al usuario.');
+        }
+
+        await db.query('COMMIT'); // Commit transaction
+        res.status(200).json({ message: "El libro y sus datos asociados se borraron correctamente." });
+
+    } catch (error) {
+        await db.query('ROLLBACK'); // Rollback transaction in case of error
+        console.error(error.message);
+        res.status(500).json({ error: error.message });
     }
-    
-
 });
+
 
 app.post('/api/verifyUser/:id', async (req, res)=>{
     const idUser =  req.params.id;
@@ -354,52 +395,54 @@ app.delete('/api/verifyUser/deleteUser/:id', async (req, res)=>{
 })
 
 
-app.post('/api/editBook/:bookId', verifyToken, upload.single('image'), async (req, res)=>{
-    try{
-        const idUsuario =  req.user.userId;
+app.post('/api/editBook/:bookId', verifyToken, upload.single('image'), async (req, res) => {
+    try {
+        const idUsuario = req.user.userId;
         const idLibro = req.params.bookId;
-        const {titulo, autor, isbn, descripcion} = req.body;
-        console.log("Id Usuario " + idUsuario);
-        console.log({titulo, autor, isbn, descripcion, idLibro});
+        const { titulo, autor, isbn, descripcion, review } = req.body;
         const image = req.file; // Access the uploaded file
-        const imageName = image.filename; // Store the filename
-        console.log(imageName);
-        const tags = JSON.parse(req.body.tags);
-        console.log("SelectedTags");
-        console.log(tags);
-        console.log("ID del libro "+idLibro);
+        const imageName = image ? image.filename : null; // Store the filename if an image is uploaded
+        const tags = JSON.parse(req.body.tags || '[]'); // Default to empty array if tags are undefined
 
-        const updateBookQuery = `update libro set titulo = $1, autor = $2, isbn = $3, descripcion = $4, coverimage= $5 where id_libro = $6 and idusuario = $7 `;
+        // Update book data
+        const updateBookQuery = `
+            UPDATE libro 
+            SET titulo = $1, autor = $2, isbn = $3, descripcion = $4, coverimage= $5 
+            WHERE id_libro = $6 AND idusuario = $7`;
+        
+        await db.query(updateBookQuery, [titulo, autor, isbn, descripcion, imageName, idLibro, idUsuario]);
 
-        await db.query(updateBookQuery, [titulo, autor, isbn, descripcion,imageName, idLibro, idUsuario])
+        // Insert or update review
+        if (review) {
+            const insertReviewQuery = `
+            INSERT INTO review (id_libro, opinion) 
+            VALUES ($1, $2) 
+            ON CONFLICT (id_libro) DO UPDATE SET opinion = excluded.opinion`;
+            await db.query(insertReviewQuery, [idLibro, review]);
+        }
 
+        // Update tags
         try {
             const deleteTagsQuery = `DELETE FROM libro_tags WHERE libroid = $1`;
             await db.query(deleteTagsQuery, [idLibro]);
-            try {
-                for (const tagId of tags) {
-                    const insertTagQuery = `
-                        INSERT INTO libro_tags (libroid, tagid)
-                        VALUES ($1, $2)`;
-                    await db.query(insertTagQuery, [idLibro, tagId]);
-                }
-                res.status(200).json({message: "Libro actualizado"})
-            } catch (error) {
-                res.status.json({error: "No se pudieron insertar nuevos tags!"});
+
+            for (const tagId of tags) {
+                const insertTagQuery = `INSERT INTO libro_tags (libroid, tagid) VALUES ($1, $2)`;
+                await db.query(insertTagQuery, [idLibro, tagId]);
             }
 
+            res.status(200).json({ message: "Libro actualizado" });
         } catch (error) {
-            res.status(500).json({error: "No se pudieron borrar los tags"})
+            console.error("Error updating tags:", error); // Log the error
+            res.status(500).json({ error: "No se pudieron insertar nuevos tags!" });
         }
 
-        
-
-    }catch (error){
-
-        res.status(500).json({error: "Book update failed"})
-
+    } catch (error) {
+        console.error("Error during book update:", error); // Log the error
+        res.status(500).json({ error: "Book update failed" });
     }
 });
+
 
 app.get('/api/getUsers', async (req, res)=>{
     try{
@@ -497,7 +540,7 @@ app.get("/api/getProfilePic", verifyToken, async (req, res)=>{
     }catch(err){
 
 
-        res.status.json({erro:"No se pudo obetener la foto de perfil!"});
+        res.status(500).json({erro:"No se pudo obetener la foto de perfil!"});
     }    
 });
 
@@ -633,73 +676,75 @@ app.post('/api/customizeTags/', verifyToken, async (req, res) => {
 });
 
 
-app.get('/api/feedBooks', verifyToken,  async (req, res)=>{
+app.get('/api/feedBooks', verifyToken, async (req, res) => {
     const userId = req.user.userId;
-    
-    console.log("El id del usuario: " +userId);
+
+    console.log("El id del usuario: " + userId);
 
     try {
         const getIdProfileQuery = `SELECT id FROM perfil_usuario WHERE user_id = $1`;
-        const idProfileResponse =  await db.query(getIdProfileQuery, [userId]);
+        const idProfileResponse = await db.query(getIdProfileQuery, [userId]);
         const profileId = idProfileResponse.rows[0].id;
         console.log("id perfil " + profileId);
-        
+
         try {
-            const matchingBooksQuery = `SELECT 
-            libro.id_libro, 
-            libro.titulo, 
-            libro.autor, 
-            libro.isbn, 
-            libro.descripcion, 
-            libro.coverimage, 
-            usuario.nombres, 
-            usuario.id,
-            ARRAY_AGG(tags.tagname) AS tagsArray
+            const matchingBooksQuery = `
+           SELECT 
+    libro.id_libro, 
+    libro.titulo, 
+    libro.autor, 
+    libro.isbn, 
+    libro.descripcion, 
+    libro.coverimage, 
+    usuario.nombres, 
+    usuario.id,
+    ARRAY_AGG(DISTINCT tags.tagname) AS tagsArray,  -- Eliminar duplicados de etiquetas
+    COALESCE(ARRAY_AGG(DISTINCT review.opinion) FILTER (WHERE review.id_libro IS NOT NULL), '{}') AS reviews -- Eliminar duplicados de reseñas
+FROM 
+    libro 
+INNER JOIN 
+    usuario ON usuario.id = libro.idusuario 
+LEFT JOIN 
+    libro_tags ON libro_tags.libroid = libro.id_libro
+LEFT JOIN 
+    tags ON tags.idtag = libro_tags.tagid
+LEFT JOIN 
+    review ON review.id_libro = libro.id_libro
+WHERE 
+    usuario.id != $1 
+    AND EXISTS (
+        SELECT 1 
         FROM 
-            libro 
-        INNER JOIN 
-            usuario ON usuario.id = libro.idusuario 
-        LEFT JOIN 
-            libro_tags ON libro_tags.libroid = libro.id_libro
-        LEFT JOIN 
-            tags ON tags.idtag = libro_tags.tagid
+            user_tags 
         WHERE 
-            usuario.id != $1 
-            AND EXISTS (
-                SELECT 1 
-                FROM 
-                    user_tags 
-                WHERE 
-                    user_tags.user_id = $2 
-                    AND user_tags.tag_id = tags.idtag
-            )
-        GROUP BY 
-            libro.id_libro, 
-            libro.titulo, 
-            libro.autor, 
-            libro.isbn, 
-            libro.descripcion, 
-            libro.coverimage, 
-            usuario.nombres, 
-            usuario.id;`;
+            user_tags.user_id = $2 
+            AND user_tags.tag_id = tags.idtag
+    )
+GROUP BY 
+    libro.id_libro, 
+    libro.titulo, 
+    libro.autor, 
+    libro.isbn, 
+    libro.descripcion, 
+    libro.coverimage, 
+    usuario.nombres, 
+    usuario.id;
+`;
 
-            const matchingBooksResponse =  await db.query(matchingBooksQuery, [userId, profileId]);
-
+            const matchingBooksResponse = await db.query(matchingBooksQuery, [userId, profileId]);
 
             const booksJSON = matchingBooksResponse.rows; 
             console.log(booksJSON);
 
             res.status(200).json(booksJSON); 
         } catch (error) {
-            res.status(500).json({error: "No se pudieron obtener los libros"})
+            res.status(500).json({ error: "No se pudieron obtener los libros" });
         }
-
-        
-        
     } catch (error) {
-        res.status(500).json({error: "No se pudieron cargar los libros"})
+        res.status(500).json({ error: "No se pudieron cargar los libros" });
     }
-})
+});
+
 
 
 
@@ -862,114 +907,39 @@ app.get('/api/getUserTags/:userId', async (req, res)=>{
 });
 
 
-app.post('/api/loanRequest/:idLibro', verifyToken, async (req, res)=>{
-
+app.post('/api/loanRequest/:idLibro', verifyToken, async (req, res) => {
     const idLibro = req.params.idLibro;
     const idPropietario = req.query.idUsuario;
-
     const idSolicitante = req.user.userId;
 
-    console.log(idLibro + " "+ idPropietario+" "+idSolicitante );
+    console.log(idLibro, idPropietario, idSolicitante);
 
     try {
         const isAvalibaleCheckQuery = `SELECT is_available FROM libro WHERE id_libro = $1`;
         const isAvaliableResponse = await db.query(isAvalibaleCheckQuery, [idLibro]);
-        console.log(isAvaliableResponse.rows[0].is_available);
 
         if (isAvaliableResponse.rows[0].is_available === true) {
-
             const currentDate = new Date();
-
-            
             const formattedDate = currentDate.toISOString().split('T')[0];
 
-            const insertLoanQuery = `INSERT INTO loan_book (user_id, book_id, loan_date, status, id_propietario) VALUES ($1, $2, $3, $4, $5)`;
-            await db.query(insertLoanQuery, [idSolicitante, idLibro,formattedDate, 'waiting_confirmation', idPropietario ]);
-            try {
-                const updateBookAvalabilityQuery =`UPDATE libro SET is_available = $1 WHERE id_libro = $2`;
-                await db.query(updateBookAvalabilityQuery, [false, idLibro]);
-                res.status(200).json({message: "Intercambio pendeiente de confirmacion :)"})
-                
-            } catch (error) {
-                res.status(500).json({error:"No se pudo solicitar el intercambio"});
-            }
-            
-        } else {
-            try {
-                const checkLoanBookQuery =`SELECT FROM loan_book WHERE user_id = $1 AND book_id =$2 AND id_propietario =$3`;
-                const verifyLoanBook = await db.query(checkLoanBookQuery, [idSolicitante, idLibro, idPropietario]);
-                if (verifyLoanBook.rowCount>0) {
-                    res.status(200).json({message:"Ya solicitaste prestamo, no puedes inscribirte a la lista de espera!"});
-                    
-                } else {
-                    try {
-                
-                        const verifyWaitingList = `SELECT FROM waiting_list WHERE user_id = $1 AND book_id =$2 AND id_propietario =$3`;
-                        const verifyWaitingListResponse = await db.query(verifyWaitingList, [idSolicitante, idLibro, idPropietario]);
-                        console.log(verifyWaitingListResponse.rowCount);
-                        if(verifyWaitingListResponse.rowCount >0){
-                            res.status(200).json({message: "Ya te has inscrito a la lista de espera de este libro!"});
-        
-                        }else{
-                            try {
-                                const checkExistenceInWaitingListQuery = `SELECT FROM waiting_list WHERE book_id =$1 AND id_propietario =$2`;
-                                const checkExistenceInWaitingList = await  db.query(checkExistenceInWaitingListQuery, [idLibro, idPropietario]);
-                                
-                                const ExistenceWaitingListRowCount = checkExistenceInWaitingList.rowCount;
-                                console.log("row count " +ExistenceWaitingListRowCount);
-        
-                                if (ExistenceWaitingListRowCount === 0) {
-                                    const currentDate = new Date();
-                                    const formattedDate = currentDate.toISOString().split('T')[0];
-                                    const insertWaitingListQuery = `INSERT INTO waiting_list (user_id, book_id, request_date, status, id_propietario, turno) VALUES ($1, $2, $3, $4, $5, $6)`;
-        
-                                    await db.query(insertWaitingListQuery,[idSolicitante, idLibro, formattedDate, 'waiting_confirmation', idPropietario, 1]);
-                                    res.status(200).json({message:"Estas en la lista de espera :)"});
-                                } else {
-                                    try {
-                                        const getTurnQuery = `SELECT MAX(turno) AS max_turno FROM waiting_list WHERE book_id =$1 AND id_propietario =$2`;
-                                        const getTurn = await db.query(getTurnQuery, [idLibro, idPropietario]);
-                                        console.log("el turno es este: ");
-                                        console.log(getTurn.rows[0].max_urno);
-                                        let newTurn = getTurn.rows[0].max_turno + 1;
-                                        console.log("nuevo turno " +newTurn);
-                                        try {
-                                            const currentDate = new Date();
-                                            const formattedDate = currentDate.toISOString().split('T')[0];
-                                            const insertWaitingListQuery = `INSERT INTO waiting_list (user_id, book_id, request_date, status, id_propietario, turno) VALUES ($1, $2, $3, $4, $5, $6)`;
-        
-                                            await db.query(insertWaitingListQuery,[idSolicitante, idLibro, formattedDate, 'waiting_confirmation', idPropietario,newTurn ]);
-                                            res.status(200).json({message:"Estas en la lista de espera :)"});
-                                            
-                                        } catch (error) {
-                                            res.status(500).json({error: "No se pudo agregar a la lista de espera!"});
-                                        }
-                                
-                                    } catch (error) {
-                                        res.status.json({erro:"No se pudo insertar el turno"})
-                                    }
-                                }   
-                            } catch (error) {
-                                res.status(500).json({error:"No se pudo inscribir a la lista de espera"})
-                            }
-                        }
-                    } catch (error) {
-                        res.status(500).json({error: "no se pudo verificar la lista de espera"})
-                    }
-                }
-                
-            } catch (error) {
-                res.status(500).json({error:"No se pudo verificar disponibilidad"})
-            }
-            
-            
-        }
+            const insertLoanQuery = `
+                INSERT INTO loan_book (user_id, book_id, loan_date, status, id_propietario) 
+                VALUES ($1, $2, $3, $4, $5)`;
+            await db.query(insertLoanQuery, [idSolicitante, idLibro, formattedDate, 'waiting_confirmation', idPropietario]);
 
-        
+            const updateBookAvalabilityQuery = `UPDATE libro SET is_available = $1 WHERE id_libro = $2`;
+            await db.query(updateBookAvalabilityQuery, [false, idLibro]);
+
+            res.status(200).json({ message: "Intercambio pendiente de confirmación :)" });
+        } else {
+            res.status(400).json({ message: "El libro no está disponible para préstamo." });
+        }
     } catch (error) {
-        res.status(500).json({error:"No se pudo realizar el intercambio"})
+        console.error("Error en la solicitud de préstamo:", error);
+        res.status(500).json({ error: "No se pudo solicitar el préstamo" });
     }
-} )
+});
+
 
 app.get('/api/feedBooksSearch/:search', verifyToken, async (req, res) => {
     const userId = req.user.userId;
@@ -990,7 +960,8 @@ app.get('/api/feedBooksSearch/:search', verifyToken, async (req, res) => {
                 libro.coverimage, 
                 usuario.nombres, 
                 usuario.id,
-                ARRAY_AGG(tags.tagname) AS tagsArray
+                ARRAY_AGG(DISTINCT tags.tagname) AS tagsArray,
+                COALESCE(ARRAY_AGG(DISTINCT review.opinion) FILTER (WHERE review.id_libro IS NOT NULL), '{}') AS reviews
             FROM 
                 libro 
             INNER JOIN 
@@ -999,6 +970,8 @@ app.get('/api/feedBooksSearch/:search', verifyToken, async (req, res) => {
                 libro_tags ON libro_tags.libroid = libro.id_libro
             LEFT JOIN 
                 tags ON tags.idtag = libro_tags.tagid
+            LEFT JOIN 
+                review ON review.id_libro = libro.id_libro
             WHERE 
                 libro.titulo ILIKE '%' || $1 || '%'
                 AND usuario.id != $2 
@@ -1016,13 +989,15 @@ app.get('/api/feedBooksSearch/:search', verifyToken, async (req, res) => {
         const matchingBooksResponse = await db.query(matchingBooksQuery, [search, userId]);
         const booksJSON = matchingBooksResponse.rows;
 
-        const rowCount = matchingBooksResponse.rowCount; // Obtener el número de filas devueltas
+        const rowCount = matchingBooksResponse.rowCount;
 
-        res.status(200).json({ rowCount, booksJSON }); // Enviar rowCount junto con booksJSON
+        res.status(200).json({ rowCount, booksJSON });
     } catch (error) {
+        console.error('Error fetching books:', error);
         res.status(500).json({ error: "No se pudieron obtener los libros" });
     }
 });
+
 
 
 
@@ -1042,25 +1017,75 @@ app.post('/api/addStrike', async (req, res) => {
             throw new Error("Usuario no encontrado");
         }
 
-        console.log("Strikes actuales: ");
-        console.log(getCurrentStrikes.rows[0].strikes);
+        console.log("Strikes actuales: ", getCurrentStrikes.rows[0].strikes);
 
         let updateStrikes = getCurrentStrikes.rows[0].strikes + 1;
         console.log(updateStrikes);
 
         if (updateStrikes > 2) {
+            // Check if the user was on a loan
+            const checkLoanQuery = `SELECT * FROM loan_book WHERE user_id = $1`;
+            const checkLoanResult = await db.query(checkLoanQuery, [idUserReportado]);
+            console.log("Check loan result: ", checkLoanResult.rows);
+
+            if (checkLoanResult.rows.length > 0) {
+                // The user was on a loan, check for the same book in the waiting list
+                const loanedBooks = checkLoanResult.rows.map(row => row.book_id);
+                console.log("Loaned books: ", loanedBooks);
+
+                if (loanedBooks.length > 0) {
+                    const checkWaitingListQuery = `
+                        SELECT waiting_id, turno, user_id, book_id, id_propietario
+                        FROM waiting_list 
+                        WHERE book_id = ANY($1::int[])
+                    `;
+                    const checkWaitingListResult = await db.query(checkWaitingListQuery, [loanedBooks]);
+                    console.log("Check waiting list result: ", checkWaitingListResult.rows);
+
+                    if (checkWaitingListResult.rows.length > 0) {
+                        for (const waitingBook of checkWaitingListResult.rows) {
+                            // Ensure the structure of the waitingBook is as expected
+                            console.log(`Processing waiting book: ${JSON.stringify(waitingBook)}`);
+
+                            // Subtract 1 from the turno column
+                            const updatedTurn = waitingBook.turno - 1;
+                            console.log(`Updating turno for waiting book ID ${waitingBook.waiting_id} to ${updatedTurn}`);
+
+                            if (!isNaN(updatedTurn) && updatedTurn === 0) {
+                                // If turno becomes 0, insert into the loan table with current date
+                                const loanDate = new Date(); // current date and time
+                                await db.query(`INSERT INTO loan_book (user_id, book_id, loan_date, id_propietario, status) VALUES ($1, $2, $3, $4, $5)`, 
+                                    [waitingBook.user_id, waitingBook.book_id, loanDate, waitingBook.id_propietario, 'waiting_confirmation']);
+                                // Remove the waiting list entry
+                                await db.query(`DELETE FROM waiting_list WHERE waiting_id = $1`, [waitingBook.waiting_id]);
+                            } else if (!isNaN(updatedTurn)) {
+                                // Update the turno column if the updatedTurn is a valid number
+                                await db.query(`UPDATE waiting_list SET turno = $1 WHERE waiting_id = $2`, [updatedTurn, waitingBook.waiting_id]);
+                            }
+                        }
+                    } else {
+                        // If no entries in the waiting list, set the book as available
+                        await db.query(`UPDATE libro SET is_available = true WHERE id_libro = ANY($1::int[])`, [loanedBooks]);
+                    }
+                }
+            }
+
             // Eliminar datos relacionados en otras tablas dependientes de perfil_usuario primero
             const perfilUsuarioQuery = `SELECT id FROM perfil_usuario WHERE user_id = $1`;
             const perfilUsuarioResult = await db.query(perfilUsuarioQuery, [idUserReportado]);
-            
+            console.log("Perfil usuario result: ", perfilUsuarioResult.rows);
+
             if (perfilUsuarioResult.rows.length > 0) {
                 const perfilUsuarioId = perfilUsuarioResult.rows[0].id;
                 await db.query(`DELETE FROM user_tags WHERE user_id = $1`, [perfilUsuarioId]);
             }
 
             // Eliminar préstamos relacionados antes de eliminar libros
-            await db.query(`DELETE FROM loan_book USING libro WHERE loan_book.book_id = libro.id_libro AND libro.idusuario = $1`, [idUserReportado]);
+            await db.query(`DELETE FROM loan_book WHERE user_id = $1`, [idUserReportado]);
 
+            await db.query(`DELETE FROM loan_book WHERE id_propietario = $1`, [idUserReportado]);
+            //await db.query(`DELETE FROM waiting_list WHERE id_propietario = $1`, [idUserReportado]);
+            await db.query(`DELETE FROM waiting_list WHERE id_propietario = $1`, [idUserReportado]);
             // Eliminar datos relacionados en otras tablas
             await db.query(`DELETE FROM libro_tags USING libro WHERE libro_tags.libroid = libro.id_libro AND libro.idusuario = $1`, [idUserReportado]);
             await db.query(`DELETE FROM libro WHERE idusuario = $1`, [idUserReportado]);
@@ -1096,6 +1121,7 @@ app.post('/api/addStrike', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 
 
 app.post('/api/ignoreStrikes', async (req, res)=>{
@@ -1580,3 +1606,476 @@ app.listen(port, () => {
       console.log(`WebSocket server listening on port ${websocketPort}`);
   });
   
+
+
+
+
+
+
+
+
+
+  app.post('/api/calificaciones', async (req, res) => {
+    const { toUserId, rating } = req.body; // Extrae los datos del cuerpo de la solicitud
+
+    try {
+        // Asegúrate de que los valores sean válidos
+        if (!toUserId || !rating) {
+            return res.status(400).json({ message: "Faltan parámetros" });
+        }
+
+        // Inserta la calificación en la base de datos
+        const query = 'INSERT INTO calificaciones (to_user_id, rating) VALUES ($1, $2)';
+        await db.query(query, [toUserId, rating]);
+
+        res.status(200).json({ message: "Alerta Alerta Alerta ESTO LO DEBO DE CAMBIAR PERO ME DIO HUEVA" });
+    } catch (error) {
+        console.error("Error al enviar la calificación:", error);
+        res.status(500).json({ message: "Error al enviar la calificación" });
+    }
+});
+
+
+
+
+
+// Endpoint para obtener calificaciones de un usuario
+app.get('/api/calificaciones/:userId', async (req, res) => {
+    const userId = req.params.userId;
+
+    try {
+        const result = await db.query('SELECT * FROM calificaciones WHERE to_user_id = $1', [userId]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener las calificaciones:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+
+
+app.post('/api/calificaciones_libros', async (req, res) => {
+    const { id_libro, id_usuario, calificacion, comentario } = req.body;
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO calificaciones_libros (id_libro, id_usuario, calificacion, comentario) 
+             VALUES ($1, $2, $3, $4) RETURNING *`,
+            [id_libro, id_usuario, calificacion, comentario]
+        );
+        res.json({ message: 'Calificación añadida con éxito', calificacion: result.rows[0] });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al añadir calificación' });
+    }
+});
+
+
+app.get('/api/calificaciones_libros/:id_libro', async (req, res) => {
+    const { id_libro } = req.params;
+
+    try {
+        const result = await pool.query(
+            `SELECT * FROM calificaciones_libros WHERE id_libro = $1`,
+            [id_libro]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener las calificaciones' });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+app.post('/api/calificar_libro', async (req, res) => {
+    const { id_libro, rating, comentario } = req.body;
+
+    // Verifica que los datos están llegando
+    console.log('Datos recibidos:', { id_libro, rating, comentario });
+
+    if (!id_libro || !rating) {
+        return res.status(400).json({ message: 'ID del libro y calificación son obligatorios' });
+    }
+
+    try {
+        // Guardar la calificación en la base de datos
+        await pool.query(
+            'INSERT INTO calificaciones_libros (id_libro, rating, comentario) VALUES ($1, $2, $3)',
+            [id_libro, rating, comentario]
+        );
+      
+        res.json({ message: 'Calificación enviada correctamente' });
+
+    } catch (error) {
+        console.error('Error al guardar la calificación:', error);
+        res.status(500).json({ message: 'Error al enviar la calificación' });
+    }
+});
+
+
+
+
+app.post('/api/comentarios_usuarios', async (req, res) => {
+    const { id_usuario, id_usuario_comentado, comentario } = req.body;
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO comentarios_usuarios (id_usuario, id_usuario_comentado, comentario) 
+             VALUES ($1, $2, $3) RETURNING *`,
+            [id_usuario, id_usuario_comentado, comentario]
+        );
+        res.json({ message: 'Comentario añadido con éxito', comentario: result.rows[0] });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al añadir comentario' });
+    }
+});
+
+
+
+
+
+
+app.get('/api/comentarios_usuarios/:id_usuario_comentado', async (req, res) => {
+    const { id_usuario_comentado } = req.params;
+
+    try {
+        const result = await pool.query(
+            `SELECT * FROM comentarios_usuarios WHERE id_usuario_comentado = $1`,
+            [id_usuario_comentado]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener los comentarios' });
+    }
+});
+
+
+
+
+
+
+app.get('/api/calificaciones_usuarios/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        // Consulta SQL para obtener el promedio de calificaciones del usuario
+        const result = await pool.query(
+            'SELECT AVG(rating) as promedio FROM calificaciones_usuarios WHERE id_usuario = $1',
+            [userId]
+        );
+
+        if (result.rows.length > 0 && result.rows[0].promedio !== null) {
+            res.json({ promedio: result.rows[0].promedio });
+        } else {
+            // Si no hay calificaciones para este usuario, devolvemos un promedio de 0
+            res.json({ promedio: 0 });
+        }
+    } catch (error) {
+        console.error('Error al obtener el promedio de calificaciones del usuario:', error);
+        res.status(500).json({ error: 'Error al obtener el promedio de calificaciones del usuario' });
+    }
+});
+
+app.post('/api/calificaciones', verifyToken, async (req, res) => {
+    const { toUserId, rating } = req.body; // ID del usuario calificado y la calificación
+    const fromUserId = req.user.userId; // ID del usuario que califica
+    try {
+        const insertRatingQuery = `
+            INSERT INTO public.calificaciones_usuarios (from_user_id, to_user_id, rating)
+            VALUES ($1, $2, $3)
+            RETURNING *;
+        `;
+        const result = await db.query(insertRatingQuery, [fromUserId, toUserId, rating]);
+        res.status(201).json({ message: "Calificación creada exitosamente", data: result.rows[0] });
+    } catch (error) {
+        console.error('Error al crear la calificación:', error);
+        res.status(500).json({ error: "No se pudo crear la calificación" });
+    }
+});
+
+app.get('/api/calificaciones/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        // Consulta para obtener las calificaciones
+        const getRatingsQuery = `
+            SELECT * FROM public.calificaciones_usuarios
+            WHERE to_user_id = $1;
+        `;
+        const ratingsResult = await db.query(getRatingsQuery, [userId]);
+
+        // Consulta para obtener el promedio de calificaciones
+        const getAverageRatingQuery = `
+            SELECT AVG(rating) AS promedio_calificacion
+            FROM public.calificaciones_usuarios
+            WHERE to_user_id = $1;
+        `;
+        const averageResult = await db.query(getAverageRatingQuery, [userId]);
+
+        res.status(200).json({
+            ratings: ratingsResult.rows,
+            promedio: averageResult.rows[0].promedio_calificacion
+        });
+    } catch (error) {
+        console.error('Error al obtener las calificaciones:', error);
+        res.status(500).json({ error: "No se pudieron obtener las calificaciones" });
+    }
+});
+
+
+
+
+
+
+// En tu backend (Node.js)
+app.post('/api/calificaciones', async (req, res) => {
+    const { username, rating } = req.body;
+
+    // Aquí deberías verificar si el nombre de usuario existe
+    const user = await User.findOne({ where: { username } }); // Usa tu ORM/consulta adecuada
+
+    if (!user) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    // Lógica para almacenar la calificación
+    // Por ejemplo:
+    await Rating.create({ userId: user.id, rating }); // Asume que tienes un modelo Rating
+
+    res.json({ message: 'Calificación enviada exitosamente' });
+});
+
+
+app.get('/api/usuarios', async (req, res) => {
+    try {
+        const result = await db.query('SELECT id, nombres FROM public.usuario');
+        res.status(200).json(result.rows); // Devuelve los usuarios con ID y nombre
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+        res.status(500).json({ error: 'Error al obtener usuarios' });
+    }
+});
+
+
+
+
+
+
+
+
+app.get('/api/calificaciones/:userId', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM calificaciones WHERE to_user_id = $1', [userId]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener las calificaciones:', error);
+        res.status(500).json({ message: 'Error al obtener las calificaciones' });
+    }
+});
+
+
+
+
+
+
+app.post("/api/addComment", verifyToken, async (req, res) => {
+    const { comentario, id_profile } = req.body;
+    const id_user = req.user.userId; 
+  
+    try {
+      
+      const queryProfile = `SELECT id FROM perfil_usuario WHERE user_id = $1`;
+      const profileResult = await db.query(queryProfile, [id_profile]); 
+  
+      if (profileResult.rowCount === 0) {
+        return res
+          .status(404)
+          .json({ error: "Perfil no encontrado para el user_id proporcionado" });
+      }
+  
+      const actualIdProfile = profileResult.rows[0].id; 
+  
+      
+      const query = `
+        INSERT INTO comentarios (id_user, id_profile, comentario, fechuki)
+        VALUES ($1, $2, $3, NOW()) RETURNING id_com`;
+      const result = await db.query(query, [
+        id_user,
+        actualIdProfile,
+        comentario,
+      ]);
+  
+      res.status(200).json({
+        message: "Comentario agregado exitosamente",
+        id_com: result.rows[0].id_com,
+      });
+    } catch (error) {
+      console.error("Error al agregar comentario:", error);
+      res.status(500).json({ error: "No se pudo agregar el comentario" });
+    }
+  });
+  
+  app.get("/api/getComments/:profileId", async (req, res) => {
+    const { profileId } = req.params; 
+  
+    try {
+      
+      const queryProfile = `SELECT id FROM perfil_usuario WHERE user_id = $1`;
+      const profileResult = await db.query(queryProfile, [profileId]);
+  
+      if (profileResult.rowCount === 0) {
+        return res
+          .status(404)
+          .json({ message: "Perfil no encontrado para este usuario" });
+      }
+  
+      const actualIdProfile = profileResult.rows[0].id; 
+      
+      const queryComments = `
+        SELECT c.id_com, c.comentario, c.fechuki, u.nombres, u.apellidos, p.profile_pic
+        FROM comentarios c
+        INNER JOIN usuario u ON c.id_user = u.id
+        LEFT JOIN perfil_usuario p ON u.id = p.user_id  -- Unimos con perfil_usuario para obtener la foto de perfil
+        WHERE c.id_profile = $1
+        ORDER BY c.fechuki DESC`;
+      const commentsResult = await db.query(queryComments, [actualIdProfile]);
+  
+      if (commentsResult.rowCount === 0) {
+        return res
+          .status(404)
+          .json({ message: "No se encontraron comentarios para este perfil" });
+      }
+  
+      res.status(200).json(commentsResult.rows);
+    } catch (error) {
+      console.error("Error al obtener comentarios:", error);
+      res.status(500).json({ error: "No se pudieron cargar los comentarios" });
+    }
+  });
+  
+  app.get("/api/getMyComments", verifyToken, async (req, res) => {
+    const id_user = req.user.userId; 
+  
+    try {
+      
+      const queryProfile = `SELECT id FROM perfil_usuario WHERE user_id = $1`;
+      const profileResult = await db.query(queryProfile, [id_user]);
+  
+      if (profileResult.rowCount === 0) {
+        return res.status(404).json({ message: "Perfil no encontrado" });
+      }
+  
+      const actualIdProfile = profileResult.rows[0].id;
+  
+      
+      const queryComments = `
+        SELECT c.id_com, c.comentario, c.fechuki, u.nombres, u.apellidos, p.profile_pic
+        FROM comentarios c
+        INNER JOIN usuario u ON c.id_user = u.id
+        LEFT JOIN perfil_usuario p ON u.id = p.user_id
+        WHERE c.id_profile = $1
+        ORDER BY c.fechuki DESC`;
+      const commentsResult = await db.query(queryComments, [actualIdProfile]);
+  
+      if (commentsResult.rowCount === 0) {
+        return res.status(404).json({ message: "No se encontraron comentarios" });
+      }
+  
+      res.status(200).json(commentsResult.rows);
+    } catch (error) {
+      console.error("Error al obtener comentarios:", error);
+      res.status(500).json({ error: "No se pudieron cargar los comentarios" });
+    }
+  });
+
+
+
+
+
+
+
+
+  app.post('/api/quejas', async (req, res) => {
+    const { id_usuario, id_libro, detalle } = req.body;
+    
+    try {
+        
+        const result = await db.query(
+            'INSERT INTO quejas (id_usuario, id_libro, detalle) VALUES ($1, $2, $3) RETURNING *',
+            [id_usuario, id_libro, detalle]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error('Error al insertar la queja:', error);
+        res.status(500).json({ error: 'Hubo un error al insertar la queja.' });
+    }
+});
+
+
+
+
+
+
+app.get('/api/quejas/:id_libro', async (req, res) => {
+    const { id_libro } = req.params;
+    try {
+        const result = await db.query(
+            'SELECT q.id_queja, u.nombres AS usuario, l.titulo AS libro, q.detalle, q.fecha_creacion ' +
+            'FROM quejas q ' +
+            'JOIN usuario u ON q.id_usuario = u.id ' +
+            'JOIN libro l ON q.id_libro = l.id_libro ' +
+            'WHERE l.id_libro = $1',
+            [id_libro]
+        );
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Hubo un error al obtener las quejas.' });
+    }
+});
+
+
+
+
+
+
+app.get('/api/libros', async (req, res) => {
+    try {
+        const query = 'SELECT id_libro, titulo, autor FROM libro';
+        const result = await db.query(query);
+        res.json(result.rows); 
+    } catch (error) {
+        console.error("Error al obtener los libros:", error);
+        res.status(500).send("Error en el servidor");
+    }
+});
+
+
+
+
+
+app.get('/api/quejas/libro/:id_libro', async (req, res) => {
+    const { id_libro } = req.params;
+    try {
+        const result = await db.query(
+            'SELECT * FROM quejas WHERE id_libro = $1',
+            [id_libro]
+        );
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener las quejas:', error);
+        res.status(500).json({ error: 'Hubo un error al obtener las quejas.' });
+    }
+});

@@ -1,12 +1,12 @@
 /* ChatUserInfo styles */
+
 .chat-user-info-header {
     display: flex;
     align-items: center;
-    background-color: #c69b7c;
+    background-color: #4A4A4A;
     border-bottom: 1px solid #ccc;
     padding-bottom: 20px;
     padding-top: 20px;
-    
     width: 100%;
 }
 
@@ -50,7 +50,7 @@ html, body {
 }
 
 .header {
-    background-color: #412307;
+    background-color: #000000; /* Negro */
     color: #ffffff;
     text-align: right;
     padding: 7px 0;
@@ -59,10 +59,10 @@ html, body {
 
 .header-container {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* Alinea los elementos en extremos opuestos */
     align-items: center;
     height: 80px;
-    background-color: #412307;
+    background-color: #000000; /* Negro */
     padding: 0 20px;
 }
 
@@ -75,7 +75,7 @@ html, body {
 
 .title-container h1 {
     font-size: 35px;
-    margin: 20px 10px;
+    margin: 20px 10px; 
     color: #FBEED3;
 }
 
@@ -90,11 +90,11 @@ html, body {
 }
 
 .chats-Container {
-    background-color: #412307;
+    background-color: #000000; /* Negro */
     width: 40%;
     border-right: 0.5px solid #4A4A4A;
     overflow-y: auto;
-    height: calc(100vh - 80px); /* Full height minus the header height */
+    height: calc(100vh - 80px);
 }
 
 .Chat-Page {
@@ -112,7 +112,7 @@ footer {
     text-align: center;
 }
 
-.pefil-picture {
+.perfil-picture {
     width: 100px;
     height: 100px;
     object-fit: cover;
@@ -125,16 +125,15 @@ footer {
     align-items: center;
     border-bottom: 1px solid #ffffff;
     padding: 10px;
-    background-color: #c69b7c;
+    background-color: #4A4A4A; /* Gris oscuro */
     margin-bottom: 10px;
     border-radius: 8px;
     cursor: pointer;
 }
 
-.profile-container:hover{
-    background-color: #e4c4ad;
+.profile-container:hover {
+    background-color: #333; /* Un color diferente para el hover */
 }
-
 
 .profile-container img {
     width: 50px;
@@ -160,13 +159,13 @@ footer {
 
 .chat-frame {
     display: flex;
-    height: calc(100vh - 80px); /* Full height minus the header height */
+    height: calc(100vh - 80px);
 }
 
 .chat-Window {
-    width: 60%; /* Adjusted according to your needs */
+    width: 60%;
     background-color: #fff9f0;
-    height: calc(100vh - 80px); /* Full height minus the header height */
+    height: calc(100vh - 80px);
     display: flex;
     flex-direction: column;
     border-radius: 10px;
@@ -187,11 +186,10 @@ footer {
     background-color: #fff9f0;
 }
 
-/* Style for the user profile container */
 .user-profile-container {
     display: flex;
     align-items: center;
-    background-color: #6B4E38;
+    background-color: #000000; /* Negro */
     padding: 15px;
     border-bottom: 1px solid #ccc;
     border-radius: 8px;
@@ -220,24 +218,21 @@ footer {
     font-weight: bold;
 }
 
-/* Style for the text messages container */
 .text-messages {
     display: flex;
     align-items: center;
     padding: 10px;
-    background-color: #c69b7c;
+    background-color: #4A4A4A; /* Gris oscuro */
     border-top: 1px solid #ccc;
 }
 
-/* Style for the button */
 .button {
     margin-left: 10px;
     cursor: pointer;
 }
 
-/* Style for the messages bar */
 .messages-bar {
-    width: 100%; /* Full width of the parent */
+    width: 100%;
     height: 50px;
     border: solid 1px #ffffff;
     outline: none;
@@ -250,10 +245,17 @@ footer {
     border-radius: 40px;
 }
 
-/* Additional style adjustments for specific containers */
-.title-container .profile-container {
-    border-bottom: 0px;
-    margin-left: 50px;
+.title-container {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center; /* Centra el texto "Chat" */
+    align-items: center;
+}
+
+.title-container h1 {
+    font-size: 35px;
+    margin: 0; /* Elimina el margen */
+    color: #FBEED3;
 }
 
 .user-profile-container p {
@@ -263,7 +265,6 @@ footer {
     text-align: center;
     margin-left: 30px;
 }
-
 
 .Window-chat {
     display: flex;
@@ -309,4 +310,34 @@ footer {
     margin-top: 5px;
     font-size: 0.8em;
     color: #555;
+}
+
+.empty-list-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin-top: 10%;
+    text-align: center;
+}
+
+.empty-list-container img {
+    width: 450px;
+    opacity: 0.4;
+}
+
+.empty-list-title {
+    margin: 0;
+    padding: 0;
+    color: rgb(251, 238, 211);
+    font-size: 30px;
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+/* Ajusta la posición de la flecha y el título */
+.arrow-icon {
+    cursor: pointer;
+    margin-left: 20px; /* Espacio para alinear con margen izquierdo */
+    color: #ffffff;
+    font-size: 24px; /* Tamaño del icono */
 }

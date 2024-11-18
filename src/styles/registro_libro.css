@@ -6,25 +6,24 @@
 
 body {
     font-family: Arial, sans-serif;
-    background: url('../assets/book-background.jpg') center/cover fixed;
+    background: url('../assets/libros-seguridad-informacion.jpg') center/cover fixed;
     background-color: rgba(255, 255, 255, 0.8);
-  
 }
 
 .form-container {
     z-index: 1;
-    width: 90%; /* 90% width on larger screens */
+    width: 90%;
     max-width: 500px;
-    margin: 50px auto;
+    margin: 20px auto;
     background-color: #fff;
-    padding: 30px;
+    padding: 20px;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     color: #333;
 }
 
@@ -35,7 +34,7 @@ body {
 
 .input-container {
     position: relative;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 input[type="text"],
@@ -66,19 +65,19 @@ input[type="number"] {
 }
 
 .button-container {
-    margin-top: 0px;
+    margin-top: 20px;
 }
 
 .signup-button {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     background-color: #333;
     border: none;
     border-radius: 5px;
     color: #fff;
     font-size: 16px;
     cursor: pointer;
-    margin-bottom: 0px;
+    margin-bottom: 10px;
 }
 
 .signup-button:hover {
@@ -86,8 +85,9 @@ input[type="number"] {
 }
 
 .footer {
-    margin-top: 10px;
+    margin-top: 20px;
     text-align: center;
+    padding: 10px;
 }
 
 .login-link {
@@ -110,50 +110,84 @@ input[type="number"] {
 
 h1 {
     text-align: center;
+    font-size: 1.8em;
+    margin: 0 10px;
 }
 
 .books-container {
-    height: 100vh;
+    height: auto;
     overflow-y: auto;
+    padding: 10px;
 }
 
 .books-list {
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 15px;
 }
 
 .book-detail-container {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap: 15px;
 }
 
 .book-detail-container img {
-    max-width: 200px;
+    max-width: 100%;
     height: auto;
 }
 
 .book-detail-container .book-info {
     flex: 1;
+    text-align: center;
 }
 
 .book-detail-container .actions {
     display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
-/* Media Query for smaller screens */
 @media screen and (max-width: 768px) {
     .form-container {
-        width: 80%; /* 80% width on medium screens */
+        width: 85%;
+        padding: 15px;
+    }
+
+    .header {
+        margin-bottom: 15px;
+    }
+
+    .signup-button {
+        padding: 10px;
+    }
+
+    .footer {
+        padding: 15px;
     }
 }
 
-/* Media Query for even smaller screens */
 @media screen and (max-width: 480px) {
     .form-container {
-        width: 90%; /* 90% width on smaller screens */
+        width: 95%;
+        padding: 10px;
+    }
+
+    .header {
+        margin-bottom: 10px;
+    }
+
+    .input-container {
+        margin-bottom: 10px;
+    }
+
+    .signup-button {
+        padding: 8px;
+    }
+
+    .footer {
+        padding: 10px;
     }
 }
-

@@ -1,33 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import InputForm from '../components/InputForm';
-//import jwt_decode from 'jwt-decode';
 import FolderIcon from '@mui/icons-material/Folder';
 import swal from 'sweetalert';
+
 function BookForm() {
     const initialFormData = {
         titulo: '',
         autor: '',
         isbn: '',
         descripcion: '',
+        review: '',
         image: null,
         tags: [],
     };
 
     const [formBookData, setFormData] = useState(initialFormData);
-
-    const handleChange = (fieldName, value) => {
-        setFormData({
-            ...formBookData,
-            [fieldName]: value,
-        });
-    };
-
     const [selectedFile, setSelectedFile] = useState(null);
     const [selectedTags, setSelectedTags] = useState([]);
     const [tags, setTags] = useState([]);
 
     useEffect(() => {
-        
         fetchTags();
     }, []);
 
@@ -45,66 +37,67 @@ function BookForm() {
         }
     }
 
-    console.log(tags);
-   
+    const handleChange = (fieldName, value) => {
+        setFormData({
+            ...formBookData,
+            [fieldName]: value,
+        });
+    };
 
     const handleTagChange = (event) => {
         const selectedTagsArray = Array.from(event.target.selectedOptions, option => option.value);
         setSelectedTags(selectedTagsArray);
-        console.log("Selected Tags:", selectedTagsArray);
     };
 
     const handleImageChange = (event) => {
         const imageFile = event.target.files[0];
-        console.log(imageFile);
         setFormData({ ...formBookData, image: imageFile });
         setSelectedFile(imageFile);
-        
     };
-
 
     const handleSubmit = async (event) => {
         event.preventDefault();
     
         try {
             const token = localStorage.getItem('token id');
-            const bookId = localStorage.getItem("tokenLibro")
+            const bookId = localStorage.getItem("tokenLibro");
             const formData = new FormData();
+    
             formData.append('titulo', formBookData.titulo);
             formData.append('autor', formBookData.autor);
             formData.append('isbn', formBookData.isbn);
             formData.append('descripcion', formBookData.descripcion);
+            formData.append('review', formBookData.review);
             formData.append('image', formBookData.image);
-            formData.append('idUsuario', token);
-            formData.append('tags', JSON.stringify(selectedTags));
+            formData.append('tags', JSON.stringify(selectedTags || [])); // Asegúrate de que selectedTags no sea null
     
             const response = await fetch(`/api/editBook/${bookId}`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
+                    // No se debe incluir 'Content-Type' para FormData
                 },
                 body: formData,
             });
     
             if (!response.ok) {
                 const errorData = await response.json();
+                console.error('Error data:', errorData); // Log the error data
                 throw new Error(errorData.error || 'Book registration failed');
             }
     
             // Reset the form data after successful registration
             setFormData(initialFormData);
             setSelectedFile(null);
-            //alert('Libro actualizado :)');
-            swal({icon:"success",title:"Libro actualizado con exito"}).then(()=>{                
-                window.location.href = "/profile"
-            })
+            swal({ icon: "success", title: "Libro actualizado con éxito" }).then(() => {
+                window.location.href = "/profile";
+            });
         } catch (error) {
-            //alert('Book registration failed: ' + error.message);
-            swal({icon:"error",title:"No se pudo actualizar el libro"})
+            swal({ icon: "error", title: "No se pudo actualizar el libro" });
             console.error('Book registration failed:', error);
         }
     };
-
+    
     return (
         <div className="form-container">
             <h1 className="header">Edita el libro</h1>
@@ -141,25 +134,32 @@ function BookForm() {
                     value={formBookData.descripcion}
                     onChange={(value) => handleChange('descripcion', value)}
                 />
+                <textarea
+                    placeholder="REVIEW"
+                    id="review"
+                    name="review"
+                    value={formBookData.review}
+                    onChange={(event) => handleChange('review', event.target.value)}
+                    rows="4" // Ajusta la cantidad de filas que deseas
+                />
                 <label htmlFor="tag-select">Elige tags para el libro:</label>
                 <select 
-                name="tags" 
-                id="tag-select" 
-                multiple 
-                className="tag-select"
-                value={selectedTags} 
-                onChange={handleTagChange} 
+                    name="tags" 
+                    id="tag-select" 
+                    multiple 
+                    className="tag-select"
+                    value={selectedTags} 
+                    onChange={handleTagChange} 
                 >
-                <option value="">--Elija una o mas opciones--</option>
-                {tags.map((tag) => (
-                    <option key={tag.idtag} value={tag.idtag}>{tag.tagname}</option>
-                ))}
+                    <option value="">--Elija una o más opciones--</option>
+                    {tags.map((tag) => (
+                        <option key={tag.idtag} value={tag.idtag}>{tag.tagname}</option>
+                    ))}
                 </select>
 
                 <label htmlFor="fileInput">
-                {selectedFile ? <p style={{marginBottom: '3px'}}>portada: {selectedFile.name}</p> : <p style={{marginBottom: '3px'}}>portada: </p> }
+                    {selectedFile ? <p style={{marginBottom: '3px'}}>portada: {selectedFile.name}</p> : <p style={{marginBottom: '3px'}}>portada: </p> }
                     <FolderIcon style={{marginBottom: '10px', cursor: 'pointer'}} />
-                    
                 </label>
                 <input
                     type="file"

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import InputForm from '../components/InputForm';
-//import jwt_decode from 'jwt-decode';
 import FolderIcon from '@mui/icons-material/Folder';
 import swal from 'sweetalert';
 
@@ -10,25 +9,17 @@ function Feed() {
         autor: '',
         isbn: '',
         descripcion: '',
+        review: '',  // Agregado
         image: null,
         tags: [],
     };
 
     const [formBookData, setFormData] = useState(initialFormData);
-
-    const handleChange = (fieldName, value) => {
-        setFormData({
-            ...formBookData,
-            [fieldName]: value,
-        });
-    };
-
     const [selectedFile, setSelectedFile] = useState(null);
     const [selectedTags, setSelectedTags] = useState([]);
     const [tags, setTags] = useState([]);
 
     useEffect(() => {
-        
         fetchTags();
     }, []);
 
@@ -46,69 +37,64 @@ function Feed() {
         }
     }
 
-    console.log(tags);
-   
+    const handleChange = (fieldName, value) => {
+        setFormData({
+            ...formBookData,
+            [fieldName]: value,
+        });
+    };
 
     const handleTagChange = (event) => {
         const selectedTagsArray = Array.from(event.target.selectedOptions, option => option.value);
         setSelectedTags(selectedTagsArray);
-        console.log("Selected Tags:", selectedTagsArray);
     };
 
     const handleImageChange = (event) => {
         const imageFile = event.target.files[0];
-        console.log(imageFile);
         setFormData({ ...formBookData, image: imageFile });
         setSelectedFile(imageFile);
-        
     };
-
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-    
+
         try {
-            console.log(selectedTags);
-            console.log(formBookData.image);
             if(selectedTags.length === 0){
-                //alert("Elige al menos 1 tag")
-                swal({icon:"info",title:"Elige al menos 1 tag"})
-            }else if(!formBookData.image){
-                //alert("Debes subir una foto de portada")
-                swal({icon:"info",title:"Debes subir una foto de portada"})
-            }else{
-            const token = localStorage.getItem('token id');
-            const formData = new FormData();
-            formData.append('titulo', formBookData.titulo);
-            formData.append('autor', formBookData.autor);
-            formData.append('isbn', formBookData.isbn);
-            formData.append('descripcion', formBookData.descripcion);
-            formData.append('image', formBookData.image);
-            formData.append('idUsuario', token);
-            formData.append('tags', JSON.stringify(selectedTags));
-    
-            const response = await fetch('/api/addBook', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: formData,
-            });
-    
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Book registration failed');
-            }
-    
-            // Reset the form data after successful registration
-            setFormData(initialFormData);
-            setSelectedFile(null);
-            //alert('Book added successfully');
-            swal({icon:"success",title:"Libro añadido"})
+                swal({ icon: "info", title: "Elige al menos 1 tag" });
+            } else if(!formBookData.image){
+                swal({ icon: "info", title: "Debes subir una foto de portada" });
+            } else {
+                const token = localStorage.getItem('token id');
+                const formData = new FormData();
+                formData.append('titulo', formBookData.titulo);
+                formData.append('autor', formBookData.autor);
+                formData.append('isbn', formBookData.isbn);
+                formData.append('descripcion', formBookData.descripcion);
+                formData.append('review', formBookData.review);  // Agregado
+                formData.append('image', formBookData.image);
+                formData.append('idUsuario', token);
+                formData.append('tags', JSON.stringify(selectedTags));
+
+                const response = await fetch('/api/addBook', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Book registration failed');
+                }
+
+                // Reset the form data after successful registration
+                setFormData(initialFormData);
+                setSelectedFile(null);
+                swal({ icon: "success", title: "Libro añadido" });
             }
         } catch (error) {
-            //alert('Book registration failed: ' + error.message);
-            swal({icon:"error",title:"No se pudo registrar el libro"});
+            swal({ icon: "error", title: "No se pudo registrar el libro" });
             console.error('Book registration failed:', error);
         }
     };
@@ -149,25 +135,34 @@ function Feed() {
                     value={formBookData.descripcion}
                     onChange={(value) => handleChange('descripcion', value)}
                 />
+                
+                <textarea
+                    placeholder="REVIEW"
+                    id="review"
+                    name="review"
+                    value={formBookData.review}
+                    onChange={(event) => handleChange('review', event.target.value)}
+                    rows="4" // Ajusta la cantidad de filas que deseas
+                />
+                
                 <label htmlFor="tag-select">Elige tags para el libro:</label>
                 <select 
-                name="tags" 
-                id="tag-select" 
-                multiple 
-                className="tag-select"
-                value={selectedTags} 
-                onChange={handleTagChange} 
+                    name="tags" 
+                    id="tag-select" 
+                    multiple 
+                    className="tag-select"
+                    value={selectedTags} 
+                    onChange={handleTagChange} 
                 >
-                <option value="">--Elija una o mas opciones--</option>
-                {tags.map((tag) => (
-                    <option key={tag.idtag} value={tag.idtag}>{tag.tagname}</option>
-                ))}
+                    <option value="">--Elija una o más opciones--</option>
+                    {tags.map((tag) => (
+                        <option key={tag.idtag} value={tag.idtag}>{tag.tagname}</option>
+                    ))}
                 </select>
 
                 <label htmlFor="fileInput">
-                {selectedFile ? <p style={{marginBottom: '3px'}}>portada: {selectedFile.name}</p> : <p style={{marginBottom: '3px'}}>portada: </p> }
-                    <FolderIcon style={{marginBottom: '10px', cursor: 'pointer'}} />
-                    
+                    {selectedFile ? <p style={{ marginBottom: '3px' }}>portada: {selectedFile.name}</p> : <p style={{ marginBottom: '3px' }}>portada: </p>}
+                    <FolderIcon style={{ marginBottom: '10px', cursor: 'pointer' }} />
                 </label>
                 <input
                     type="file"
@@ -176,7 +171,6 @@ function Feed() {
                     onChange={handleImageChange}
                     accept="image/*"
                 />
-                
 
                 <div className="button-container">
                     <button type="submit" className="signup-button">
@@ -190,7 +184,6 @@ function Feed() {
                 </a>
             </div>
         </div>
-        
     );
 }
 

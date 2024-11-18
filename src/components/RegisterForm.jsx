@@ -132,11 +132,19 @@ function RegisterForm() {
                     value={formData.repetirPassword}
                     onChange={(value) => handleChange('repetirPassword', value)}
                 />
-                <label htmlFor="fileInput">
-                {selectedFile ? <p style={{marginBottom: '3px', marginTop: '3px'}}>Credencial: {selectedFile.name}</p> : <p style={{marginBottom: '3px',  marginTop: '3px'}}>Credencial: </p> }
-                    <BadgeIcon style={{marginBottom: '10px', cursor: "pointer"}} />
-                    
-                </label>
+
+                
+                <label htmlFor="fileInput" style={{ color: '#ffffff' }}> {/* Cambiar el color del texto a blanco */}
+  {selectedFile ? (
+    <p style={{ marginBottom: '3px', marginTop: '3px', color: '#ffffff' }}>
+      Credencial: {selectedFile.name}
+    </p>
+  ) : (
+    <p style={{ marginBottom: '3px', marginTop: '3px', color: '#ffffff' }}>Credencial: </p>
+  )}
+  <BadgeIcon style={{ marginBottom: '10px', cursor: 'pointer', color: '#ffffff' }} />
+</label>
+
                 <input
                     type="file"
                     id="fileInput"

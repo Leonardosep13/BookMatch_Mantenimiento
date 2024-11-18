@@ -1,5 +1,5 @@
 body {
-    background-color: #FBEED3;
+    background-color: white;
     margin: 0;
 }
 
@@ -9,25 +9,27 @@ body {
     align-items: center;
     position: relative;
     height: 15%;
-    background-color: #967259;
-    padding: 0 20px; /* Add padding to the sides */
+    background-color: black;
+    padding: 0 20px;
 }
 
 .container-inputSearch {
     position: relative;
+    flex-grow: 1;
 }
 
 .inputSearch {
-    width: 400px;
+    width: 100%; 
+    max-width: 400px;
     height: 40px;
     border-radius: 9999px;
-    border: solid 1px #ffffff;
+    border: solid 1px black;
     outline: none;
     background-image: url("src/assets/magnifying-glass-1976105_1280.webp");
     background-repeat: no-repeat;
     background-position: 10px center;
-    background-size: 15px; 
-    padding-left: 40px; 
+    background-size: 15px;
+    padding-left: 40px;
     margin-top: 10px;
 }
 
@@ -50,20 +52,50 @@ body {
     justify-content: space-between;
     align-items: center;
     height: 80px;
-    background-color: #967259;
-    padding: 0 20px; /* Add padding to the sides */
+    background-color: black;
+    padding: 0 20px;
+    position: relative; 
+    z-index: 1000; 
+    overflow: hidden; 
 }
+
+.books-container {
+    margin-top: 20px; 
+    padding: 20px;
+}
+
+
+@media screen and (max-width: 768px) {
+    .header-container {
+        flex-direction: column;
+        height: auto;
+        padding: 10px;
+    }
+
+    .books-container {
+        margin-top: 80px; 
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .books-container {
+        margin-top: 60px; 
+    }
+}
+
 
 .logo-container,
 .profilepic-container {
-    margin: 0 10px; /* Ajusta el margen entre los contenedores si es necesario */
+    margin: 0 10px;
     cursor: pointer;
 }
-.searchbar-container{
+
+.searchbar-container {
+    flex-grow: 1;
     margin-right: 60px;
-    
 }
-.pageLink{
+
+.pageLink {
     margin-right: 20px;
     margin-left: 20px;
     margin-top: 25px;
@@ -74,8 +106,8 @@ body {
     transition: transform 0.2s;
 }
 
-.pageLink:hover{
-    transform: scale(1.1); 
+.pageLink:hover {
+    transform: scale(1.1);
 }
 
 /* Media queries */
@@ -87,18 +119,55 @@ body {
     }
 
     .inputSearch {
+        width: 100%;
         margin: 10px 0;
     }
 
-    .pageLink {
-        margin-right: 10px; /* Reduce the right margin */
-        margin-left: 10px; /* Reduce the left margin */
-        margin-top: 10px; /* Reduce the top margin */
+    .imagenLogo {
+        width: 60px;
+        margin-right: 10px;
     }
 
     .ProfilePic {
-        margin-right: 0; /* Remove right margin */
-        cursor: pointer;
+        width: 50px;
+        height: 50px;
+        margin-right: 0;
+    }
+
+    .header-container {
+        flex-direction: column;
+        padding: 20px;
+    }
+
+    .searchbar-container {
+        margin-right: 0;
+    }
+
+    .pageLink {
+        margin-right: 10px;
+        margin-left: 10px;
+        margin-top: 10px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .inputSearch {
+        width: 100%;
+        padding-left: 30px;
+        font-size: 14px;
+    }
+
+    .ProfilePic {
+        width: 40px;
+        height: 40px;
+    }
+
+    .imagenLogo {
+        width: 50px;
+    }
+
+    .pageLink {
+        margin-top: 5px;
     }
 }
 
@@ -108,12 +177,193 @@ body {
     left: 0;
     bottom: 0;
     width: 100%;
-    background-color: #000000;
-    color: rgb(255, 255, 255);
+    background-color: black;
+    color: #ffffff;
     text-align: center;
-  }
-  /*No supe donde ponerlo aqui esta de prueba ya que el color del antiguo footer es el mismo que el background*/
+}
 
-  .tags{
-    background-color: antiquewhite;
-  }
+
+
+
+
+
+
+
+
+
+
+.calificar-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background-color: #f9f9f9;
+}
+
+.calificar-form {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.calificaciones-container {
+    margin-top: 20px;
+}
+
+.calificaciones-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.calificaciones-list li {
+    background-color: #fff;
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    color: #555;
+}
+
+span {
+    font-size: 24px; /* Tamaño de las estrellas */
+}
+
+span.active {
+    color: gold; /* Color de las estrellas activas */
+}
+
+span.inactive {
+    color: lightgray; /* Color para estrellas inactivas */
+}
+
+select {
+    color: black;  /* Asegura que el texto sea visible */
+    background-color: white; /* Asegura que el fondo no sea transparente */
+}
+
+option {
+    color: black;  /* Texto visible en las opciones */
+    background-color: white; /* Fondo blanco en las opciones */
+}
+
+
+
+
+
+form {
+    margin: 20px 0;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-family: 'Arial', sans-serif;
+}
+
+form label {
+    display: inline-block;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #333;
+}
+
+form select {
+    padding: 8px;
+    margin-right: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f2f2f2;
+    font-size: 14px;
+    color: #333;
+}
+
+form button {
+    padding: 10px 15px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+form button:hover {
+    background-color: #218838;
+}
+
+form input[type="text"],
+form input[type="email"],
+form textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    background-color: #f9f9f9;
+    transition: border-color 0.3s ease;
+}
+
+form input[type="text"]:focus,
+form input[type="email"]:focus,
+form textarea:focus {
+    border-color: #007bff;
+}
+
+.calificar-container {
+    margin: 20px 0; /* Añadir margen para separar de otros componentes */
+}
+
+.calificar-form {
+    margin-bottom: 30px; /* Aumenta el margen inferior para mayor separación */
+}
+
+.calificaciones-container {
+    margin-top: 30px; /* Aumenta el margen superior para separar del formulario */
+}
+
+
+.calificar-container {
+    margin: 40px auto; /* Centro el contenedor */
+    max-width: 600px; /* Limitar ancho */
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+}
+
+.calificar-form {
+    display: flex;
+    flex-direction: column; /* Alineación vertical */
+    margin-top: 20px; /* Espacio entre el select y el formulario */
+}
+
+.calificaciones-container {
+    margin-top: 20px; /* Espacio entre el formulario y las calificaciones */
+    border-top: 1px solid #ddd; /* Línea divisoria */
+    padding-top: 20px; /* Espacio entre la línea y las calificaciones */
+}
+
+.user-select {
+    padding: 10px; /* Espaciado interno */
+    margin: 10px 0; /* Espaciado superior e inferior */
+    border: 1px solid #ccc; /* Borde suave */
+    border-radius: 5px; /* Bordes redondeados */
+    background-color: #f2f2f2; /* Color de fondo suave */
+    font-size: 14px; /* Tamaño de fuente */
+    color: #333; /* Color del texto */
+    width: 100%; /* Hacer que el select ocupe todo el ancho disponible */
+    transition: border-color 0.3s ease; /* Transición suave para el borde */
+}
+
+/* Cambiar el color del borde al enfocar */
+.user-select:focus {
+    border-color: #007bff; /* Color azul al enfocar */
+    outline: none; /* Quitar el borde por defecto al enfocar */
+}

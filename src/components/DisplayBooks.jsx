@@ -77,10 +77,15 @@ function DisplayBooks() {
 
     return (
         <div className="books-container">
-            <h1 className="form-container" style = {{marginLeft: '35%'}}>Mi estantería</h1>
+            <h1 className="form-container" style = {{marginLeft: '35%'}}></h1>
             <div className="books-list">
-                {books.map(bookItem => (
-                    
+            {books.length === 0 ? (
+                <div className="empty-list-container">
+                    <img src="src/assets/logo.png" alt="Imagen default de logo" />
+                    <h1 className="empty-list-title">No has subido ningún libro aún</h1>
+                </div>
+            ) : (
+                books.map(bookItem => (
                     <BookEntry
                         key={bookItem.id_libro}
                         id={bookItem.id_libro}
@@ -88,12 +93,14 @@ function DisplayBooks() {
                         autor={bookItem.autor}
                         isbn={bookItem.isbn}
                         descripcion={bookItem.descripcion}
+                        review={bookItem.review}
                         coverimage={bookItem.coverimage} // Render the image from Base64 string
                         tags={bookItem.tagsarray}
                         onDelete={deleteBook}
                         onClick={editBook}
                     />
-                ))}
+                ))
+            )}
             </div>
         </div>
     );

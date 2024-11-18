@@ -6,9 +6,8 @@
 
 body {
   font-family: Arial, sans-serif;
-  background: url('../assets/fondo4k.jpg') center/cover fixed;
-  background-color: rgba(255, 255, 255, 0.8);
-  
+  background: url('src/assets/fondo nuevo.jpeg') center/cover fixed;
+  background-color: rgba(0, 0, 0, 0.8);
 }
 
 .form-container {
@@ -17,16 +16,16 @@ body {
   max-width: 500px;
   margin: 50px auto;
   margin-top: 10px;
-  background-color: #fff;
+  background-color: #000000;
   padding: 30px;
   border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
 }
 
 .header {
   text-align: center;
   margin-bottom: 30px;
-  color: #333;
+  color: #ffffff;
 }
 
 .form {
@@ -45,9 +44,11 @@ input[type="password"],
 input[type="number"] {
   width: 100%;
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid #fff;
   border-radius: 5px;
   font-size: 16px;
+  background-color: #000000;
+  color: #ffffff;
 }
 
 .label {
@@ -55,58 +56,84 @@ input[type="number"] {
   top: 10%;
   left: 10px;
   transform: translateY(-100%);
-  color: #999;
+  color: #ffffff;
   font-size: 14px;
-  background-color: #fff;
+  background-color: #000000;
   transition: transform 0.3s ease;
 }
 
-.button-container {
-  margin-top: 0px;
-}
-
+/* Botón de "Crear Cuenta" con efecto de iluminación */
 .signup-button {
   width: 100%;
   padding: 10px;
-  background-color: #333;
+  background-color: #000000;
   border: none;
-  border-radius: 5px;
-  color: #fff;
+  border-radius: 12px;
+  color: #ffffff;
   font-size: 16px;
   cursor: pointer;
   margin-bottom: 0px;
+  position: relative;
+  z-index: 0;
+  outline: none;
+}
+
+.signup-button:before {
+  content: '';
+  background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  background-size: 400%;
+  z-index: -1;
+  filter: blur(5px);
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  animation: glowing 20s linear infinite;
+  opacity: 0;
+  transition: opacity .3s ease-in-out;
+  border-radius: 12px;
+}
+
+.signup-button:hover:before {
+  opacity: 1;
+}
+
+.signup-button:after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #000000;
+  left: 0;
+  top: 0;
+  border-radius: 12px;
+  z-index: -1;
+}
+
+@keyframes glowing {
+  0% { background-position: 0 0; }
+  50% { background-position: 400% 0; }
+  100% { background-position: 0 0; }
 }
 
 .signup-button:hover {
-  background-color: #555;
+  transform: scale(1.05);
 }
 
-.footer {
-  margin-top: 10px;
-  text-align: center;
-}
-
-.login-link {
-  color: #333;
-  font-size: 16px;
-  text-decoration: underline;
+.footer, .login-link, .terms-link {
+  color: #ffffff;
 }
 
 .terms {
   margin-top: 10px;
-  color: #666;
+  color: #ffffff;
   font-size: 14px;
 }
 
-
-.terms-link {
-  color: #333;
-  font-size: 14px;
-  text-decoration: underline;
-}
-
-h1{
+h1 {
   text-align: center;
+  color: #ffffff;
 }
 
 .books-container {
@@ -140,17 +167,49 @@ h1{
   gap: 10px;
 }
 
-/* Media Query for smaller screens */
-@media screen and (max-width: 600px) {
+/* Media Query para pantallas más pequeñas */
+@media screen and (max-width: 768px) {
   .form-container {
-    width: 90%; /* Adjust the width for smaller screens */
-    margin: 20px auto; /* Adjust the margin for smaller screens */
+    width: 90%;
+    margin: 20px auto;
+    padding: 20px;
+  }
+
+  .book-detail-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .signup-button {
+    font-size: 14px; /* Reduzco el tamaño del texto en pantallas más pequeñas */
   }
 }
 
-/* Media Query for even smaller screens */
+@media screen and (max-width: 600px) {
+  .form-container {
+    width: 95%;
+    margin: 15px auto;
+    padding: 15px;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"] {
+    font-size: 14px; /* Ajusta el tamaño del texto para pantallas más pequeñas */
+  }
+}
+
 @media screen and (max-width: 400px) {
   .form-container {
-    padding: 20px; /* Adjust the padding for smaller screens */
+    padding: 10px;
+  }
+
+  .signup-button {
+    padding: 8px; /* Reduce el tamaño del botón en pantallas más pequeñas */
+  }
+
+  .book-detail-container img {
+    max-width: 150px; /* Reduce el tamaño de la imagen en pantallas más pequeñas */
   }
 }
