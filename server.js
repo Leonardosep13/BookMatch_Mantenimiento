@@ -1628,7 +1628,7 @@ app.listen(port, () => {
         const query = 'INSERT INTO calificaciones (to_user_id, rating) VALUES ($1, $2)';
         await db.query(query, [toUserId, rating]);
 
-        res.status(200).json({ message: "Alerta Alerta Alerta ESTO LO DEBO DE CAMBIAR PERO ME DIO HUEVA" });
+        res.status(200).json({ message: "Calificacion Registrada" });
     } catch (error) {
         console.error("Error al enviar la calificación:", error);
         res.status(500).json({ message: "Error al enviar la calificación" });
