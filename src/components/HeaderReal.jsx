@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import SearchBar from "./SearchBar";
+import SearchBar from "./searchBar";
 import ProfilePic from "./ProfilePic";
 import '../styles/feed.css'
 import swal from "sweetalert";
